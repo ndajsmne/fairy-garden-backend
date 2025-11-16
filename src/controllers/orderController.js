@@ -5,16 +5,52 @@ class OrderController {
   static async createOrder(req, res) {
     try {
       const userId = req.user.userId;
-      const { shippingAddress } = req.body;
+      // Accept both a shippingAddress object and top-level delivery fields
+      const {
+        shippingAddress,
+        deliveryMethod,
+        deliveryDate,
+        deliveryTime,
+        recipientName,
+        recipientPhone,
+        senderName,
+        senderPhone,
+        cardMessage,
+        cardFrom,
+        cardTo
+      } = req.body;
 
-      if (!shippingAddress) {
+      // shippingAddress is required and must be an object
+      if (!shippingAddress || typeof shippingAddress !== 'object') {
         return res.status(400).json({
           status: 'error',
-          message: 'Shipping address is required'
+          message: 'Shipping address object is required'
         });
       }
 
-      const { orderId, totalAmount } = await Order.createFromCart(userId, shippingAddress);
+      // Validate minimal shipping address structure (address, postalCode, province)
+      const { address, city, postalCode, province } = shippingAddress;
+      if (!address || !postalCode || !province) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Shipping address must include address, postalCode, and province'
+        });
+      }
+
+      const orderPayload = {
+        deliveryMethod,
+        deliveryDate,
+        deliveryTime,
+        recipientName,
+        recipientPhone,
+        senderName,
+        senderPhone,
+        cardMessage,
+        cardFrom,
+        cardTo
+      };
+
+      const { orderId, totalAmount } = await Order.createFromCart(userId, shippingAddress, orderPayload);
 
       res.status(201).json({
         status: 'success',
@@ -37,17 +73,20 @@ class OrderController {
   static async getUserOrders(req, res) {
     try {
       const userId = req.user.userId;
+      console.log('[OrderController] Getting orders for user:', userId);
+      
       const orders = await Order.getUserOrders(userId);
+      console.log('[OrderController] Retrieved orders:', orders);
 
       res.json({
         status: 'success',
         data: orders
       });
     } catch (error) {
-      console.error('Get user orders error:', error);
+      console.error('Get user orders error:', error.stack || error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to retrieve orders'
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to retrieve orders'
       });
     }
   }
@@ -58,7 +97,10 @@ class OrderController {
       const { orderId } = req.params;
       const userId = req.user.role === 'admin' ? null : req.user.userId;
       
+      console.log('[OrderController] Getting order:', { orderId, userId, userRole: req.user.role });
+      
       const order = await Order.getOrderById(orderId, userId);
+      console.log('[OrderController] Retrieved order:', order);
       
       if (!order) {
         return res.status(404).json({
@@ -72,10 +114,10 @@ class OrderController {
         data: order
       });
     } catch (error) {
-      console.error('Get order error:', error);
+      console.error('[OrderController] Get order error:', error.stack || error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to retrieve order'
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to retrieve order'
       });
     }
   }
@@ -86,6 +128,9 @@ class OrderController {
       const { orderId } = req.params;
       const { status } = req.body;
 
+      console.log('[OrderController] Updating order status:', { orderId, newStatus: status });
+
+      // Validate status
       if (!status) {
         return res.status(400).json({
           status: 'error',
@@ -93,7 +138,17 @@ class OrderController {
         });
       }
 
-      const updated = await Order.updateStatus(orderId);
+      // Validate status value
+      const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          status: 'error',
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+        });
+      }
+
+      // Update the order
+      const updated = await Order.updateStatus(orderId, status);
       
       if (!updated) {
         return res.status(404).json({
@@ -102,15 +157,19 @@ class OrderController {
         });
       }
 
+      // Get updated order details
+      const order = await Order.getOrderById(orderId);
+
       res.json({
         status: 'success',
-        message: 'Order status updated successfully'
+        message: 'Order status updated successfully',
+        data: order
       });
     } catch (error) {
-      console.error('Update order status error:', error);
+      console.error('[OrderController] Update order status error:', error.stack || error);
       res.status(error.message.includes('Invalid') ? 400 : 500).json({
         status: 'error',
-        message: error.message || 'Failed to update order status'
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to update order status'
       });
     }
   }

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { isRevoked } = require('../utils/tokenBlacklist');
 
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -14,14 +15,25 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // Check token revocation
+    if (isRevoked(token)) {
+      return res.status(401).json({ status: 'fail', message: 'Token has been revoked. Please login again.' });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Token expiry and validity handled by jwt.verify; handle specific errors in catch
     req.user = decoded; // { userId, role }
     next();
   } catch (error) {
-    return res.status(403).json({
-      status: 'error',
-      message: 'Invalid token.'
-    });
+    // More specific JWT error handling
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ status: 'fail', message: 'Token expired. Please login again.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ status: 'fail', message: 'Invalid token.' });
+    }
+
+    return res.status(401).json({ status: 'fail', message: 'Authentication failed.' });
   }
 };
 

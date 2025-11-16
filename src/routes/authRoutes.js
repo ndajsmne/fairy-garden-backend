@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/authController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
+const { registerValidator, loginValidator } = require('../validators/authValidator');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 /**
  * @swagger
@@ -97,5 +99,50 @@ router.post('/register', validateRegistration, AuthController.register);
  *         description: Invalid credentials
  */
 router.post('/login', validateLogin, AuthController.login);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user (revoke current token)
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       400:
+ *         description: No token provided
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/logout', authenticateToken, AuthController.logout);
+
+/**
+ * @swagger
+ * /api/auth/admin/revoke/{userId}:
+ *   post:
+ *     summary: Admin - Revoke all tokens for a user
+ *     tags: [Authentication, Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of user whose tokens should be revoked
+ *     responses:
+ *       200:
+ *         description: Tokens revoked successfully
+ *       400:
+ *         description: Invalid user ID
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin access required
+ */
+router.post('/admin/revoke/:userId', authenticateToken, requireAdmin, AuthController.revokeUserTokens);
 
 module.exports = router;

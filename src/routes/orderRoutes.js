@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const OrderController = require('../controllers/orderController');
+const { createOrderValidator } = require('../validators/orderValidator');
 const { authenticateToken, requireAdmin, requireCustomer } = require('../middleware/auth');
 
 /**
@@ -45,6 +46,13 @@ const { authenticateToken, requireAdmin, requireCustomer } = require('../middlew
 // All routes require authentication
 router.use(authenticateToken);
 
+// Backwards-compatible alias for checkout endpoint
+// POST /api/checkout -> create order from cart
+router.post('/checkout', requireCustomer, createOrderValidator, OrderController.createOrder);
+
+// POST /api/orders -> create order from cart
+router.post('/', requireCustomer, createOrderValidator, OrderController.createOrder);
+
 /**
  * @swagger
  * /api/orders:
@@ -67,7 +75,7 @@ router.use(authenticateToken);
  *       403:
  *         description: Customer access required
  */
-router.post('/orders', requireCustomer, OrderController.createOrder);
+router.post('/', requireCustomer, OrderController.createOrder);
 /**
  * @swagger
  * /api/orders/my-orders:
@@ -90,7 +98,31 @@ router.post('/orders', requireCustomer, OrderController.createOrder);
  *       403:
  *         description: Customer access required
  */
-router.get('/orders/my-orders', requireCustomer, OrderController.getUserOrders);
+router.get('/my-orders', requireCustomer, OrderController.getUserOrders);
+
+/**
+ * @swagger
+ * /api/orders/admin:
+ *   get:
+ *     summary: Get all orders (Admin only)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all orders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin access required
+ */
+router.get('/admin', requireAdmin, OrderController.getAllOrders);
 
 /**
  * @swagger
@@ -118,7 +150,7 @@ router.get('/orders/my-orders', requireCustomer, OrderController.getUserOrders);
  *       404:
  *         description: Order not found
  */
-router.get('/orders/:orderId', OrderController.getOrder);
+router.get('/:orderId', OrderController.getOrder);
 
 /**
  * @swagger
@@ -146,31 +178,7 @@ router.get('/orders/:orderId', OrderController.getOrder);
  *       400:
  *         description: Order cannot be cancelled
  */
-router.post('/orders/:orderId/cancel', requireCustomer, OrderController.cancelOrder);
-
-/**
- * @swagger
- * /api/admin/orders:
- *   get:
- *     summary: Get all orders (Admin only)
- *     tags: [Orders]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of all orders
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Order'
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Admin access required
- */
-router.get('/admin/orders', requireAdmin, OrderController.getAllOrders);
+router.post('/:orderId/cancel', requireCustomer, OrderController.cancelOrder);
 
 /**
  * @swagger
@@ -208,6 +216,10 @@ router.get('/admin/orders', requireAdmin, OrderController.getAllOrders);
  *       404:
  *         description: Order not found
  */
-router.put('/admin/orders/:orderId/status', requireAdmin, OrderController.updateOrderStatus);
+// Direct update status route
+router.put('/:orderId/status', requireAdmin, OrderController.updateOrderStatus);
+
+// Legacy admin route (keeping for backward compatibility)
+router.put('/admin/:orderId/status', requireAdmin, OrderController.updateOrderStatus);
 
 module.exports = router;

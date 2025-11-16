@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const PaymentController = require('../controllers/paymentController');
 const { authenticateToken, requireCustomer } = require('../middleware/auth');
+const { initiatePaymentValidator, getPaymentStatusValidator, simulateNotificationValidator } = require('../validators/paymentValidator');
 
 /**
  * @swagger
@@ -64,7 +65,7 @@ const { authenticateToken, requireCustomer } = require('../middleware/auth');
  *       400:
  *         description: Order already paid or invalid status
  */
-router.post('/orders/:orderId/pay', authenticateToken, requireCustomer, PaymentController.initiatePayment);
+router.post('/orders/:orderId/pay', authenticateToken, requireCustomer, initiatePaymentValidator, PaymentController.initiatePayment);
 
 /**
  * @swagger
@@ -92,7 +93,7 @@ router.post('/orders/:orderId/pay', authenticateToken, requireCustomer, PaymentC
  *       404:
  *         description: Order or payment not found
  */
-router.get('/orders/:orderId/payment-status', authenticateToken, PaymentController.getPaymentStatus);
+router.get('/orders/:orderId/payment-status', authenticateToken, getPaymentStatusValidator, PaymentController.getPaymentStatus);
 
 /**
  * @swagger
@@ -121,5 +122,8 @@ router.get('/orders/:orderId/payment-status', authenticateToken, PaymentControll
  *         description: Invalid notification data
  */
 router.post('/payment-notification', PaymentController.handleNotification);
+
+// Test-only: simulate payment notification from gateway
+router.post('/simulate-notification', simulateNotificationValidator, PaymentController.simulateNotification);
 
 module.exports = router;

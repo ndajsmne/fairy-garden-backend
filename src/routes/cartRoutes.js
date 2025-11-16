@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const CartController = require('../controllers/cartController');
 const { authenticateToken, requireCustomer } = require('../middleware/auth');
+const { addToCartValidator, updateCartValidator, removeFromCartValidator } = require('../validators/cartValidator');
 
 /**
  * @swagger
@@ -52,11 +53,11 @@ router.use(requireCustomer);
  *       403:
  *         description: Customer access required
  */
-router.get('/cart', CartController.getCart);
+router.get('/', CartController.getCart);
 
 /**
  * @swagger
- * /api/cart/add:
+ * /api/cart:
  *   post:
  *     summary: Add item to cart
  *     tags: [Cart]
@@ -69,10 +70,10 @@ router.get('/cart', CartController.getCart);
  *           schema:
  *             type: object
  *             required:
- *               - productId
+ *               - product_id
  *               - quantity
  *             properties:
- *               productId:
+ *               product_id:
  *                 type: integer
  *               quantity:
  *                 type: integer
@@ -87,7 +88,7 @@ router.get('/cart', CartController.getCart);
  *       403:
  *         description: Customer access required
  */
-router.post('/cart/add', CartController.addToCart);
+router.post('/', addToCartValidator, CartController.addToCart);
 
 /**
  * @swagger
@@ -127,7 +128,7 @@ router.post('/cart/add', CartController.addToCart);
  *       404:
  *         description: Cart item not found
  */
-router.put('/cart/update/:cartItemId', CartController.updateCartItem);
+router.put('/update/:cartItemId', updateCartValidator, CartController.updateCartItem);
 
 /**
  * @swagger
@@ -153,7 +154,7 @@ router.put('/cart/update/:cartItemId', CartController.updateCartItem);
  *       404:
  *         description: Cart item not found
  */
-router.delete('/cart/remove/:cartItemId', CartController.removeFromCart);
+router.delete('/remove/:cartItemId', removeFromCartValidator, CartController.removeFromCart);
 
 /**
  * @swagger
@@ -171,6 +172,6 @@ router.delete('/cart/remove/:cartItemId', CartController.removeFromCart);
  *       403:
  *         description: Customer access required
  */
-router.delete('/cart/clear', CartController.clearCart);
+router.delete('/clear', CartController.clearCart);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const Payment = require('../models/payment');
 const Order = require('../models/order');
 const User = require('../models/user');
+const logger = require('../config/logger');
 
 class PaymentController {
   // Initiate payment for an order
@@ -30,8 +31,10 @@ class PaymentController {
       // Get user details
       const [user] = await User.findById(userId);
 
-      // Create payment record
-      await Payment.create(orderId, order.total_amount);
+      // Create or update payment record (only create if no payment exists; don't create duplicates)
+      if (!existingPayment) {
+        await Payment.create(orderId, order.total_amount);
+      }
 
       // Generate payment token
       const paymentToken = await Payment.generatePaymentToken(order, user);
@@ -44,7 +47,7 @@ class PaymentController {
         }
       });
     } catch (error) {
-      console.error('Payment initiation error:', error);
+      logger.error('Payment initiation error', { message: error.message, stack: error.stack });
       res.status(500).json({
         status: 'error',
         message: 'Failed to initiate payment'
@@ -57,7 +60,7 @@ class PaymentController {
     try {
       const notification = req.body;
 
-      // Process notification
+      // Process notification (this will call Midtrans validation internally)
       const { orderId, paymentStatus } = await Payment.handleNotification(notification);
 
       res.json({
@@ -65,11 +68,27 @@ class PaymentController {
         message: `Payment status updated to ${paymentStatus} for order ${orderId}`
       });
     } catch (error) {
-      console.error('Payment notification error:', error);
+      logger.error('Payment notification error', { message: error.message, stack: error.stack });
       res.status(500).json({
         status: 'error',
         message: 'Failed to process payment notification'
       });
+    }
+  }
+
+  // Simulate payment notification (test helper)
+  static async simulateNotification(req, res) {
+    try {
+      const payload = req.body; // expect order_id, transaction_status, transaction_id, fraud_status (optional)
+      const { orderId, paymentStatus } = await Payment.processNotificationPayload(payload);
+
+      res.json({
+        status: 'success',
+        message: `Simulated payment status updated to ${paymentStatus} for order ${orderId}`
+      });
+    } catch (error) {
+      logger.error('Payment simulation error', { message: error.message, stack: error.stack });
+      res.status(500).json({ status: 'error', message: 'Failed to simulate notification' });
     }
   }
 
@@ -103,7 +122,7 @@ class PaymentController {
         data: payment
       });
     } catch (error) {
-      console.error('Get payment status error:', error);
+      logger.error('Get payment status error', { message: error.message, stack: error.stack });
       res.status(500).json({
         status: 'error',
         message: 'Failed to get payment status'

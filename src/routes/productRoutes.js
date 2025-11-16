@@ -54,32 +54,39 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
  *       500:
  *         description: Server error
  */
-router.get('/produk', ProductController.getAllProducts);
+router.get('/', ProductController.getProducts);
 
 /**
  * @swagger
- * /api/produk/{id}:
+ * /api/products/featured:
  *   get:
- *     summary: Get a product by ID
+ *     summary: Get featured products for homepage
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: List of featured products
+ */
+router.get('/featured', ProductController.getFeaturedProducts);
+
+/**
+ * @swagger
+ * /api/products/{id}:
+ *   get:
+ *     summary: Get a product by ID with related products
  *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
- *         description: Product ID
  *     responses:
  *       200:
- *         description: Product details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
+ *         description: Product details with related products
  *       404:
  *         description: Product not found
  */
-router.get('/produk/:id', ProductController.getProductById);
+router.get('/:id', ProductController.getProduct);
 
 /**
  * @swagger
@@ -103,7 +110,7 @@ router.get('/produk/:id', ProductController.getProductById);
  *       403:
  *         description: Admin access required
  */
-router.post('/produk', authenticateToken, requireAdmin, ProductController.createProduct);
+router.post('/', authenticateToken, requireAdmin, ProductController.createProduct);
 
 /**
  * @swagger
@@ -136,7 +143,7 @@ router.post('/produk', authenticateToken, requireAdmin, ProductController.create
  *       404:
  *         description: Product not found
  */
-router.put('/produk/:id', authenticateToken, requireAdmin, ProductController.updateProduct);
+router.put('/:id', authenticateToken, requireAdmin, ProductController.updateProduct);
 
 /**
  * @swagger
@@ -163,6 +170,66 @@ router.put('/produk/:id', authenticateToken, requireAdmin, ProductController.upd
  *       404:
  *         description: Product not found
  */
-router.delete('/produk/:id', authenticateToken, requireAdmin, ProductController.deleteProduct);
+router.delete('/:id', authenticateToken, requireAdmin, ProductController.deleteProduct);
+
+/**
+ * @swagger
+ * /api/products/{id}/related:
+ *   post:
+ *     summary: Add a related product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - relatedProductId
+ *             properties:
+ *               relatedProductId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Related product added successfully
+ *       400:
+ *         description: Products are already related or invalid product IDs
+ */
+router.post('/:id/related', authenticateToken, requireAdmin, ProductController.addRelatedProduct);
+
+/**
+ * @swagger
+ * /api/products/{id}/related/{relatedId}:
+ *   delete:
+ *     summary: Remove a related product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: relatedId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Related product removed successfully
+ *       404:
+ *         description: Related product not found
+ */
+router.delete('/:id/related/:relatedId', authenticateToken, requireAdmin, ProductController.removeRelatedProduct);
 
 module.exports = router;

@@ -7,15 +7,19 @@ const logger = require('../config/logger');
 // Rate limiting
 const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
-  windowMs: 60 * 60 * 1000, // 1 hour
-  message: 'Too many requests from this IP, please try again in an hour!'
+  windowMs: 60 * 1000, // 1 minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: JSON.stringify({ status: 'fail', message: 'Too many requests, please try again later.' })
 });
 
 // API specific limiter
 const apiLimiter = rateLimit({
   max: 20, // limit each IP to 20 requests per windowMs
   windowMs: 15 * 60 * 1000, // 15 minutes
-  message: 'Too many requests for this API endpoint, please try again later.'
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: JSON.stringify({ status: 'fail', message: 'Too many requests for this API endpoint, please try again later.' })
 });
 
 // Custom morgan token for logging user ID

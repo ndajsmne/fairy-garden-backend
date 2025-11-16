@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-fairy_garden_db}
+      MYSQL_USER: ${DB_USER:-fg_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-fg_pass}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: .
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER:-fg_user}
+      DB_PASS: ${DB_PASSWORD:-fg_pass}
+      DB_NAME: ${DB_NAME:-fairy_garden_db}
+      DB_PORT: 3306
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: production
+      PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL}
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:

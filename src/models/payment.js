@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { snap, core } = require('../config/midtrans');
+const logger = require('../config/logger');
 
 class Payment {
   // Create new payment record
@@ -18,14 +19,18 @@ class Payment {
   // Generate payment token from Midtrans
   static async generatePaymentToken(order, user) {
     try {
+      // Build customer name/email safely - some user records use first_name/last_name
+      const customerName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      const customerEmail = user.email || user.email_address || '';
+
       const parameter = {
         transaction_details: {
           order_id: `ORDER-${order.id}`,
-          gross_amount: order.total_amount
+          gross_amount: Number(order.total_amount) || 0
         },
         customer_details: {
-          first_name: user.name,
-          email: user.email
+          first_name: customerName,
+          email: customerEmail
         },
         credit_card: {
           secure: true
@@ -43,9 +48,24 @@ class Payment {
   static async handleNotification(notification) {
     try {
       const statusResponse = await core.transaction.notification(notification);
-      const orderId = statusResponse.order_id.replace('ORDER-', '');
+      return await Payment.processNotificationPayload(statusResponse);
+    } catch (error) {
+      logger.error('Payment model error', { message: error.message, stack: error.stack });
+      throw error;
+    }
+  }
+
+  // Process a notification payload (either from Midtrans or simulation)
+  static async processNotificationPayload(statusResponse) {
+    try {
+      const orderId = (statusResponse.order_id || '').toString().replace('ORDER-', '');
       const transactionStatus = statusResponse.transaction_status;
       const fraudStatus = statusResponse.fraud_status;
+      
+      // Generate transaction_id if not provided or empty (for simulation)
+      const transactionId = (statusResponse.transaction_id && statusResponse.transaction_id.trim()) 
+        ? statusResponse.transaction_id 
+        : `MOCK-${Date.now()}-${orderId}`;
 
       let paymentStatus;
       if (transactionStatus === 'capture') {
@@ -62,29 +82,32 @@ class Payment {
         paymentStatus = 'failed';
       } else if (transactionStatus === 'pending') {
         paymentStatus = 'pending';
+      } else {
+        paymentStatus = 'pending';
       }
 
       // Update payment status
       await db.query(
         'UPDATE payments SET status = ?, transaction_id = ? WHERE order_id = ?',
-        [paymentStatus, statusResponse.transaction_id, orderId]
+        [paymentStatus, transactionId, orderId]
       );
 
-      // If payment is completed, update order status
+      // If payment is completed, update orders.payment_status column
       if (paymentStatus === 'completed') {
         await db.query(
-          'UPDATE orders SET status = ? WHERE id = ?',
+          'UPDATE orders SET payment_status = ? WHERE id = ?',
           ['paid', orderId]
         );
       } else if (paymentStatus === 'failed') {
         await db.query(
-          'UPDATE orders SET status = ? WHERE id = ?',
-          ['cancelled', orderId]
+          'UPDATE orders SET payment_status = ? WHERE id = ?',
+          ['failed', orderId]
         );
       }
 
       return { orderId, paymentStatus };
     } catch (error) {
+      logger.error('Payment process payload error', { message: error.message, stack: error.stack });
       throw error;
     }
   }

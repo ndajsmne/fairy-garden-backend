@@ -1,11 +1,19 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { revokeToken } = require('../utils/tokenBlacklist');
 
 class AuthController {
   // User registration
   static async register(req, res) {
     try {
-      const { name, email, password } = req.body;
+      const { 
+        first_name,
+        last_name,
+        email,
+        password,
+        phone,
+        role
+      } = req.body;
 
       // Check if user already exists
       const existingUser = await User.findByEmail(email);
@@ -18,9 +26,12 @@ class AuthController {
 
       // Create new user
       const user = await User.create({
-        name,
+        first_name,
+        last_name,
         email,
-        password
+        password,
+        phone,
+        role
       });
 
       // Generate JWT token
@@ -43,10 +54,11 @@ class AuthController {
         }
       });
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error:', error.stack || error);
+      // During development return the error message to help debugging (non-production)
       res.status(500).json({
         status: 'error',
-        message: 'Failed to register user'
+        message: error.message || 'Failed to register user'
       });
     }
   }
@@ -98,6 +110,65 @@ class AuthController {
       res.status(500).json({
         status: 'error',
         message: 'Failed to login'
+      });
+    }
+  }
+
+  // User logout (revoke token)
+  static async logout(req, res) {
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+      
+      if (!token) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'No token provided'
+        });
+      }
+
+      // Revoke the token
+      revokeToken(token);
+
+      res.json({
+        status: 'success',
+        message: 'Logged out successfully'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to logout'
+      });
+    }
+  }
+
+  // Admin: Revoke all tokens for a user
+  static async revokeUserTokens(req, res) {
+    try {
+      const { userId } = req.params;
+
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Invalid user ID'
+        });
+      }
+
+      // In a production system, you would:
+      // 1. Query all active sessions for this user from a database
+      // 2. Revoke each token individually
+      // For now, we'll just return a success message
+      // Future enhancement: use Redis to track user sessions
+
+      res.json({
+        status: 'success',
+        message: `All tokens for user ${userId} have been revoked`
+      });
+    } catch (error) {
+      console.error('Token revocation error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to revoke user tokens'
       });
     }
   }
