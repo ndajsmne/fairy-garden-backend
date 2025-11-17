@@ -61,7 +61,7 @@ class AuthController {
         last_name,
         email,
         password,
-        phone: phone || phone_number,
+        phone_number: phone_number || phone,
         role
       });
 

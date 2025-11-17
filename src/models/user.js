@@ -27,10 +27,8 @@ class User {
       const { 
         first_name, 
         last_name, 
-        name,
         email, 
         password, 
-        phone,
         phone_number,
         role = 'customer' 
       } = userData;
@@ -43,8 +41,8 @@ class User {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Use phone or phone_number (support both field names), default to '-' if not provided
-      const phoneValue = phone || phone_number || '-';
+      // Use phone_number, default to '-' if not provided
+      const phoneValue = phone_number || '-';
 
       // Insert into users table with all fields including phone_number
       const [result] = await db.query(
