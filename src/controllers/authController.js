@@ -6,14 +6,44 @@ class AuthController {
   // User registration
   static async register(req, res) {
     try {
-      const { 
+      let { 
         first_name,
         last_name,
+        name,
         email,
         password,
         phone,
         role
       } = req.body;
+
+      // Support both 'name' and 'first_name'/'last_name' formats
+      if (!first_name && !last_name && name) {
+        const nameParts = name.trim().split(' ');
+        first_name = nameParts[0];
+        last_name = nameParts.slice(1).join(' ') || nameParts[0];
+      }
+
+      // Validate required fields
+      if (!first_name || !last_name) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Name is required (provide "name" or "first_name"/"last_name")'
+        });
+      }
+
+      if (!email) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email is required'
+        });
+      }
+
+      if (!password) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Password is required'
+        });
+      }
 
       // Check if user already exists
       const existingUser = await User.findByEmail(email);
@@ -46,7 +76,8 @@ class AuthController {
         data: {
           user: {
             id: user.id,
-            name: user.name,
+            first_name: user.first_name,
+            last_name: user.last_name,
             email: user.email,
             role: user.role
           },
@@ -54,8 +85,7 @@ class AuthController {
         }
       });
     } catch (error) {
-      console.error('Registration error:', error.stack || error);
-      // During development return the error message to help debugging (non-production)
+      console.error('[AuthController.register] Error:', error.message, error.stack);
       res.status(500).json({
         status: 'error',
         message: error.message || 'Failed to register user'
