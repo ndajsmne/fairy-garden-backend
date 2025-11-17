@@ -174,9 +174,10 @@ class Product {
         ORDER BY p.created_at DESC
         LIMIT 6
       `);
-      return rows;
+      return rows || [];
     } catch (error) {
-      throw error;
+      console.error('[Product.getFeatured] Error:', error.message, error.stack);
+      throw new Error(`Failed to fetch featured products: ${error.message}`);
     }
   }
 }

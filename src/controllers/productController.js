@@ -41,11 +41,12 @@ class ProductController {
     try {
       const products = await Product.getFeatured();
       
-      res.json({ items: products });
+      res.json({ items: products || [] });
     } catch (error) {
+      console.error('[ProductController.getFeaturedProducts] Error:', error.message);
       res.status(500).json({
-        status: 'error',
-        message: error.message
+        error: error.message,
+        status: 'error'
       });
     }
   }
