@@ -145,4 +145,39 @@ router.post('/logout', authenticateToken, AuthController.logout);
  */
 router.post('/admin/revoke/:userId', authenticateToken, requireAdmin, AuthController.revokeUserTokens);
 
+/**
+ * @swagger
+ * /api/auth/admin-register:
+ *   post:
+ *     summary: Register admin user
+ *     tags: [Authentication, Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *                 default: Admin
+ *               last_name:
+ *                 type: string
+ *                 default: Fairy Garden
+ *               email:
+ *                 type: string
+ *                 default: adminfg@fairygarden.com
+ *               password:
+ *                 type: string
+ *                 default: Fairy17garden_
+ *     responses:
+ *       201:
+ *         description: Admin user created successfully
+ *       400:
+ *         description: Email already registered or missing fields
+ *       500:
+ *         description: Failed to create admin user
+ */
+router.post('/admin-register', AuthController.registerAdmin);
+
 module.exports = router;

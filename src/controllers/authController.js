@@ -203,6 +203,72 @@ class AuthController {
       });
     }
   }
+
+  // Admin registration (create admin user)
+  static async registerAdmin(req, res) {
+    try {
+      const { 
+        first_name = 'Admin',
+        last_name = 'Fairy Garden',
+        email = 'adminfg@fairygarden.com',
+        password = 'Fairy17garden_'
+      } = req.body;
+
+      // Validate required fields
+      if (!first_name || !last_name || !email || !password) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'All fields required: first_name, last_name, email, password'
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await User.findByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email already registered'
+        });
+      }
+
+      // Create admin user
+      const user = await User.create({
+        first_name,
+        last_name,
+        email,
+        password,
+        phone_number: '-',
+        role: 'admin'
+      });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+      );
+
+      res.status(201).json({
+        status: 'success',
+        data: {
+          user: {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            role: user.role
+          },
+          token
+        }
+      });
+    } catch (error) {
+      console.error('[AuthController.registerAdmin] Error:', error.message, error.stack);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to create admin user'
+      });
+    }
+  }
 }
 
 module.exports = AuthController;
