@@ -26,27 +26,15 @@ const setupRequestLogger = require('./middleware/logger');
 const app = express();
 
 // ---- CORS configuration -------------------------------------------------
-// FRONTEND_URL may contain one or more origins separated by commas
-const frontendEnv = process.env.FRONTEND_URL || '';
-const allowedOrigins = frontendEnv.split(',').map(s => s.trim()).filter(Boolean);
-
-if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
-  app.use(cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server or curl
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      }
-      return callback(new Error('CORS policy: This origin is not allowed'), false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
-  }));
-} else {
-  // Development: allow all origins (convenience)
-  app.use(cors({ origin: true, credentials: true }));
-}
+app.use(cors({
+  origin: [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "https://fairygarden.vercel.app"
+  ],
+  methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+  allowedHeaders: "Content-Type, Authorization"
+}));
 
 // ---- Security + parsing -----------------------------------------------
 app.use(helmet());
