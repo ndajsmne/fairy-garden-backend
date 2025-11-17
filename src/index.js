@@ -54,9 +54,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentRoutes); // payment webhooks may be public
 app.use('/api/categories', categoryRoutes);
+app.use('/api/products', productRoutes); // Products visible to all (customer can view)
 
 // ---- Protected routes -------------------------------------------------
-app.use('/api/products', authenticateToken, productRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/cart', authenticateToken, cartRoutes);
 app.use('/api/orders', authenticateToken, orderRoutes);
