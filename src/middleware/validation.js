@@ -1,18 +1,32 @@
 const { body, validationResult } = require('express-validator');
 
 const validateRegistration = [
+  // Accept either 'name' or 'first_name'/'last_name'
+  body().custom((value, { req }) => {
+    const { name, first_name, last_name } = req.body;
+    if (!name && (!first_name || !last_name)) {
+      throw new Error('Either "name" or both "first_name" and "last_name" are required');
+    }
+    return true;
+  }),
+
   body('first_name')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('First name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('First name must be between 2 and 100 characters'),
+  
   body('last_name')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Last name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Last name must be between 2 and 100 characters'),
+
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   
   body('email')
     .trim()
