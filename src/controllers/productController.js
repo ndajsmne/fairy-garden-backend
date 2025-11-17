@@ -15,7 +15,7 @@ class ProductController {
         limit
       } = req.query;
 
-      const products = await Product.getAll({
+      const result = await Product.getAll({
         search,
         category,
         sortBy,
@@ -26,10 +26,7 @@ class ProductController {
         limit: limit ? Number(limit) : 12
       });
 
-      res.json({
-        status: 'success',
-        data: products
-      });
+      res.json(result);
     } catch (error) {
       res.status(500).json({
         status: 'error',
@@ -43,10 +40,7 @@ class ProductController {
     try {
       const products = await Product.getFeatured();
       
-      res.json({
-        status: 'success',
-        data: products
-      });
+      res.json({ items: products });
     } catch (error) {
       res.status(500).json({
         status: 'error',
