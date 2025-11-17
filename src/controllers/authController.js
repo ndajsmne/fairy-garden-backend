@@ -13,6 +13,7 @@ class AuthController {
         email,
         password,
         phone,
+        phone_number,
         role
       } = req.body;
 
@@ -60,7 +61,7 @@ class AuthController {
         last_name,
         email,
         password,
-        phone,
+        phone: phone || phone_number,
         role
       });
 
