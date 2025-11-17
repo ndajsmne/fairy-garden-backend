@@ -100,6 +100,9 @@ router.post('/register', validateRegistration, AuthController.register);
  */
 router.post('/login', validateLogin, AuthController.login);
 
+// Admin login alias - login only allowed for admin users
+router.post('/admin-login', validateLogin, AuthController.adminLogin);
+
 /**
  * @swagger
  * /api/auth/logout:

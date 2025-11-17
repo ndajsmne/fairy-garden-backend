@@ -145,6 +145,66 @@ class AuthController {
     }
   }
 
+  // Admin login - only allow users with role 'admin'
+  static async adminLogin(req, res) {
+    try {
+      const { email, password } = req.body;
+
+      // Find user by email
+      const user = await User.findByEmail(email);
+      if (!user) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Invalid email or password'
+        });
+      }
+
+      // Verify password
+      const isPasswordValid = await User.verifyPassword(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Invalid email or password'
+        });
+      }
+
+      // Require admin role
+      if (user.role !== 'admin') {
+        return res.status(403).json({
+          status: 'fail',
+          message: 'Access denied. Admins only.'
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+      );
+
+      res.json({
+        status: 'success',
+        data: {
+          user: {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            role: user.role
+          },
+          token
+        }
+      });
+    } catch (error) {
+      console.error('[AuthController.adminLogin] Error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to login as admin'
+      });
+    }
+  }
+
   // User logout (revoke token)
   static async logout(req, res) {
     try {
