@@ -76,7 +76,8 @@ class Product {
         }
       };
     } catch (error) {
-      throw error;
+      console.error('[Product.getAll] Error:', error.message, error.stack);
+      throw new Error(`Failed to fetch products: ${error.message}`);
     }
   }
 

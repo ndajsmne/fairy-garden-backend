@@ -260,3 +260,5 @@
 ::1 - guest [2025-11-16T15:50:28.969Z] "POST /api/auth/login" 401 56 - 92.377 ms
 ::1 - guest [2025-11-16T15:50:35.211Z] "POST /api/auth/login" 200 269 - 108.819 ms
 ::1 - 7 [2025-11-16T15:51:20.919Z] "GET /api/orders/10" 200 938 - 102.410 ms
+::1 - guest [2025-11-17T04:17:18.584Z] "GET /api/products" 200 1960 - 260.999 ms
+::1 - guest [2025-11-17T04:17:18.789Z] "GET /favicon.ico" 404 54 - 22.070 ms

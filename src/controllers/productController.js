@@ -28,9 +28,10 @@ class ProductController {
 
       res.json(result);
     } catch (error) {
+      console.error('[ProductController.getProducts] Error:', error.message);
       res.status(500).json({
-        status: 'error',
-        message: error.message
+        error: error.message,
+        status: 'error'
       });
     }
   }
