@@ -31,6 +31,7 @@ class User {
         email, 
         password, 
         phone,
+        phone_number,
         role = 'customer' 
       } = userData;
       // Ensure we have valid first and last names
@@ -42,10 +43,13 @@ class User {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Insert into users table with first_name and last_name
+      // Use phone or phone_number (support both field names)
+      const phoneValue = phone || phone_number || null;
+
+      // Insert into users table with all fields including phone_number
       const [result] = await db.query(
-        'INSERT INTO users (first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?)',
-        [first_name, last_name, email, hashedPassword, role]
+        'INSERT INTO users (first_name, last_name, email, password, phone_number, role) VALUES (?, ?, ?, ?, ?, ?)',
+        [first_name, last_name, email, hashedPassword, phoneValue, role]
       );
 
       return {
@@ -53,6 +57,7 @@ class User {
         first_name,
         last_name,
         email,
+        phone_number: phoneValue,
         role
       };
     } catch (error) {
